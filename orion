@@ -4,7 +4,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local HttpService = game:GetService("HttpService")
-local CoreGui = game:GetService("CoreGui")
+local Workspace = game:GetService("Workspace")
 
 local OrionLib = {
 	Elements = {},
@@ -28,10 +28,6 @@ local OrionLib = {
 
 local Icons = {}
 
-getgenv().gethui = function() 
-  return CoreGui
-end
-
 local function GetIcon(IconName)
 	if Icons[IconName] ~= nil then
 		return Icons[IconName]
@@ -40,21 +36,39 @@ local function GetIcon(IconName)
 	end
 end   
 
-local Orion = Instance.new("ScreenGui")
-Orion.Name = math.random(1,999999)
-if syn then
-	syn.protect_gui(Orion)
-end
-Orion.Parent = CoreGui
+-- Create invisible part for BillboardGui
+local AnchorPart = Instance.new("Part")
+AnchorPart.Name = math.random(100000, 999999)
+AnchorPart.Size = Vector3.new(0.05, 0.05, 0.05)
+AnchorPart.Transparency = 1
+AnchorPart.CanCollide = false
+AnchorPart.Anchored = true
+AnchorPart.Position = Vector3.new(0, 99999, 0)
+AnchorPart.Parent = Workspace
 
-for _, Interface in ipairs(CoreGui:GetChildren()) do
-	if Interface.Name == Orion.Name and Interface ~= Orion then
-		Interface:Destroy()
+-- Create BillboardGui instead of ScreenGui
+local Orion = Instance.new("BillboardGui")
+Orion.Name = math.random(100000, 999999)
+Orion.Size = UDim2.new(0, 2000, 0, 2000)
+Orion.StudsOffset = Vector3.new(0, 0, 0)
+Orion.AlwaysOnTop = true
+Orion.Adornee = AnchorPart
+Orion.ResetOnSpawn = false
+Orion.Parent = AnchorPart
+
+-- Keep camera focused on part
+local Camera = workspace.CurrentCamera
+task.spawn(function()
+	while AnchorPart.Parent do
+		if Camera then
+			AnchorPart.CFrame = Camera.CFrame * CFrame.new(0, 0, -10)
+		end
+		task.wait()
 	end
-end
+end)
 
 function OrionLib:IsRunning()
-	return Orion.Parent == CoreGui
+	return Orion.Parent ~= nil
 end
 
 local function AddConnection(Signal, Function)
@@ -776,44 +790,6 @@ function OrionLib:MakeWindow(WindowConfig)
 				end
 				return LabelFunction
 			end
-			function ElementFunction:AddParagraph(Text, Content)
-				Text = Text or "Text"
-				Content = Content or "Content"
-
-				local ParagraphFrame = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 5), {
-					Size = UDim2.new(1, 0, 0, 30),
-					BackgroundTransparency = 0.7,
-					Parent = ItemParent
-				}), {
-					AddThemeObject(SetProps(MakeElement("Label", Text, 15), {
-						Size = UDim2.new(1, -12, 0, 14),
-						Position = UDim2.new(0, 12, 0, 10),
-						Font = Enum.Font.GothamBold,
-						Name = "Title"
-					}), "Text"),
-					AddThemeObject(SetProps(MakeElement("Label", "", 13), {
-						Size = UDim2.new(1, -24, 0, 0),
-						Position = UDim2.new(0, 12, 0, 26),
-						Font = Enum.Font.GothamSemibold,
-						Name = "Content",
-						TextWrapped = true
-					}), "TextDark"),
-					AddThemeObject(MakeElement("Stroke"), "Stroke")
-				}), "Second")
-
-				AddConnection(ParagraphFrame.Content:GetPropertyChangedSignal("Text"), function()
-					ParagraphFrame.Content.Size = UDim2.new(1, -24, 0, ParagraphFrame.Content.TextBounds.Y)
-					ParagraphFrame.Size = UDim2.new(1, 0, 0, ParagraphFrame.Content.TextBounds.Y + 35)
-				end)
-
-				ParagraphFrame.Content.Text = Content
-
-				local ParagraphFunction = {}
-				function ParagraphFunction:Set(ToChange)
-					ParagraphFrame.Content.Text = ToChange
-				end
-				return ParagraphFunction
-			end    
 			function ElementFunction:AddButton(ButtonConfig)
 				ButtonConfig = ButtonConfig or {}
 				ButtonConfig.Name = ButtonConfig.Name or "Button"
@@ -995,49 +971,13 @@ function OrionLib:MakeWindow(WindowConfig)
 			ElementFunction[i] = v 
 		end
 
-		if TabConfig.PremiumOnly then
-			for i, v in next, ElementFunction do
-				ElementFunction[i] = function() end
-			end    
-			Container:FindFirstChild("UIListLayout"):Destroy()
-			Container:FindFirstChild("UIPadding"):Destroy()
-			SetChildren(SetProps(MakeElement("TFrame"), {
-				Size = UDim2.new(1, 0, 1, 0),
-				Parent = ItemParent
-			}), {
-				AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://3610239960"), {
-					Size = UDim2.new(0, 18, 0, 18),
-					Position = UDim2.new(0, 15, 0, 15),
-					ImageTransparency = 0.4
-				}), "Text"),
-				AddThemeObject(SetProps(MakeElement("Label", "Unauthorised Access", 14), {
-					Size = UDim2.new(1, -38, 0, 14),
-					Position = UDim2.new(0, 38, 0, 18),
-					TextTransparency = 0.4
-				}), "Text"),
-				AddThemeObject(SetProps(MakeElement("Image", "rbxassetid://4483345875"), {
-					Size = UDim2.new(0, 56, 0, 56),
-					Position = UDim2.new(0, 84, 0, 110),
-				}), "Text"),
-				AddThemeObject(SetProps(MakeElement("Label", "Premium Features", 14), {
-					Size = UDim2.new(1, -150, 0, 14),
-					Position = UDim2.new(0, 150, 0, 112),
-					Font = Enum.Font.GothamBold
-				}), "Text"),
-				AddThemeObject(SetProps(MakeElement("Label", "This part of the script is locked to Sirius Premium users. Purchase Premium in the Discord server (discord.gg/sirius)", 12), {
-					Size = UDim2.new(1, -200, 0, 14),
-					Position = UDim2.new(0, 150, 0, 138),
-					TextWrapped = true,
-					TextTransparency = 0.4
-				}), "Text")
-			})
-		end
 		return ElementFunction   
 	end 
 	return TabFunction
 end   
 
 function OrionLib:Destroy()
+	AnchorPart:Destroy()
 	Orion:Destroy()
 end
 
